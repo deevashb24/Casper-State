@@ -71,8 +71,8 @@ Five end-to-end scenarios, each run for real on Casper testnet. Every transfer a
 
 Describe the agent's job in plain English and pick its tools (or let it infer them from the goal). It reads its balance, sends CSPR by itself with no wallet popup, anchors a note on Casper, and reports back, every step a real transaction.
 
-![Casper State UI Demo Video](docs/screenshots/demo_video.webp)
-*A brief walkthrough of the updated futuristic glassmorphic UI of Casper State*
+![Casper State Futuristic UI](docs/screenshots/dashboard.png)
+*The updated futuristic glassmorphic UI of Casper State*
 
 ### 2. Guardrails that stop it
 
