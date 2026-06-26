@@ -1,60 +1,196 @@
-# Casper State 🌐
+# Casper State
 
-**Casper State** is a cutting-edge visual node-based autonomous AI agent builder designed specifically for the Casper Network. It empowers users to construct, deploy, and manage advanced decentralized workflows, DeFi strategies, compliance protocols, and on-chain intelligence through an intuitive, futuristic interface.
+Build autonomous AI agents on the Casper Network, with no code.
 
-## ⚡ Key Features
+Drag glossy glass blocks onto a neon canvas and connect them, or just describe what you want in plain English, and Casper State assembles an agent that reads live on-chain data, decides with an AI model, and signs real Casper transactions by itself, on a schedule, with no Rust and no terminal. Every AI decision can be cryptographically anchored on-chain as a tamper-proof EIP-712 attestation. And every action is also published as an MCP server, so other AI tools can call the same Casper actions.
 
-* **Visual Node Programming**: Build complex agent logic without writing a single line of code. Simply drag, drop, and connect execution blocks.
-* **Autonomous AI Agents**: Integrated with neural decision logic to allow agents to execute complex strategies across DeFi and smart contracts autonomously.
-* **DeFi Markets & Value Routing**: Built-in liquidity swaps, automated DCA accumulators, L402 payment channels, and limit orders.
-* **Tokenized RWA Compliance**: Deep support for real-world assets (RWA) with ERC-3643 compliance protocols, automated cap-table distributions, and asset freeze mechanisms.
-* **Web3 Cyberpunk Aesthetic**: A deeply immersive, glossy glass-neon UI featuring real-time visual hierarchy and structural execution flow.
+Built for the Casper Agentic Buildathon 2026.
 
-## 🚀 Getting Started
+🎬 [Demo video](#) · 💻 [GitHub](https://github.com/deevashb24/Casper-State) · 📦 [MCP server (npm)](#)
 
-### Prerequisites
-* Node.js (v18 or higher recommended)
-* npm, yarn, or pnpm
+![Casper State visual canvas](docs/screenshots/dashboard.png)
+*Casper State visual canvas: a cyberpunk-themed treasury agent running on Casper testnet*
 
-### Installation
+## Contents
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/deevashb24/Casper-State.git
-   cd Casper-State
-   ```
+- [What it is](#what-it-is)
+- [What's real today](#whats-real-today)
+- [The flagship: Treasury Guardian](#the-flagship-treasury-guardian)
+- [Screenshots](#screenshots)
+- [Quick start](#quick-start)
+- [Build your first agent](#build-your-first-agent)
+- [Optional: run the x402 demo server](#optional-run-the-x402-demo-server)
+- [Use the MCP server](#use-the-mcp-server)
+- [How it works](#how-it-works)
+- [Why Casper](#why-casper)
+- [Tech stack](#tech-stack)
+- [Roadmap](#roadmap)
+- [Security](#security)
+- [License](#license)
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+## What it is
 
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+Building an autonomous agent on Casper today means writing Rust, deploying contracts, and living in a terminal. That leaves out the people who actually have the ideas: treasurers, operators, founders, analysts. Casper State removes that barrier. If you can describe the job, you can ship the agent.
 
-4. Open your browser and navigate to `http://localhost:5173`.
+You work on a visual canvas made of immersive glassmorphic blocks, grouped into Sensors & Triggers, Logic Gates, DeFi Markets, Value Routing, Smart Contracts, Tokenized RWA, and Data Terminals. You wire them together, or type one sentence in the command bar and an AI builds the flow for you. Then you run it once, or set it live on a schedule.
 
-## 🧠 Core Modules
+## What's real today
 
-Casper State comes with an extensive library of on-chain modules categorized for rapid workflow generation:
+Everything below runs for real on Casper testnet. Nothing is a mockup.
 
-* **Sensors & Triggers**: Schedule triggers, Price Sentinels, Network Event Monitors, and Ledger Delta tracking.
-* **Logic Gates**: Condition Gates, State Mutators, and Chrono Delays.
-* **Autonomous AI**: Neural Decisions and AI Consensus Councils.
-* **DeFi Markets**: Liquidity Swaps, Rate Quotes, Prediction Markets, and Automated Stop-Losses.
-* **Smart Contracts**: Contract Auditors, On-Chain Attestations, and Token Deployers (CEP-18 & CEP-78).
-* **Tokenized RWA**: Compliance Protocols, Primary Token Offerings, NAV Valuation Updates, and Corporate Actions.
+| Capability | What's real |
+| :--- | :--- |
+| **Autonomous signed transactions** | Transfer CSPR, stake/delegate, execute contracts, anchor attestations, signed locally with no wallet popup |
+| **x402 pay-per-call** | 402 -> pay on Casper -> server verifies on-chain -> data returned, tested end to end |
+| **x402 earn** | A L402 Revenue Stream block lets an agent sell its output (a signal, score, or feed) for other agents to buy per call |
+| **Spending guardrails** | A Capital Guardrail caps CSPR moved (per run, per day, or total) and blocks anything over budget; x402 answers are verified before they are trusted; a Cryptographic Receipt logs every payment |
+| **Verifiable AI** | EIP-712 attestation of AI decisions anchored on Casper, a short commitment or the full 256-bit digest across four transfers |
+| **Bring your own AI** | Claude, GPT, Gemini, Grok, or any OpenAI-compatible endpoint |
+| **On-chain reads** | Live CSPR price, balances, and incoming transfers, used as triggers and conditions |
+| **Alerts** | Telegram and Discord messages carrying the on-chain proof link |
+| **MCP server** | Published on npm as `casperflow-mcp`, exposes Casper actions to any MCP client |
+| **Beta (in validation on testnet):** | no-code contract deployment. Install a real CEP-18 token (fixed or mintable/burnable, with or without on-chain events) or a CEP-78 NFT collection, choosing ownership, who can mint, mutable metadata, and burnability from dropdowns, then mint NFTs, with no Rust. |
 
-## 🛠 Tech Stack
+## The flagship: Treasury Guardian
 
-* **Frontend Framework**: React 18
-* **Build Tool**: Vite
-* **Node Graph Environment**: React Flow
-* **Styling**: Vanilla CSS (Custom Glassmorphic Cyberpunk Design System)
-* **Icons**: Phosphor Icons
+A recurring payroll agent for a DAO treasury, built from a single sentence and run live on testnet:
 
-## 📜 License
+1. It reads its wallet's real CSPR balance on-chain (via CSPR.cloud).
+2. An AI decides whether it is safe to release a payroll payment.
+3. If approved, the agent signs and sends real CSPR transfers by itself, with no popup.
+4. A second AI writes a short, plain-language audit summary of the decision.
+5. Both AI verdicts are anchored on Casper as a tamper-proof EIP-712 attestation.
+6. A full Telegram report is delivered with every transaction proof link.
+7. When the treasury drops below the safe threshold, the guardrail refuses to pay and stops the agent on its own. Every step is a real, final transaction you can open on the public Casper explorer.
 
-This project is licensed under the MIT License.
+## Screenshots
+
+Five end-to-end scenarios, each run for real on Casper testnet. Every transfer and attestation shown is a final transaction on the public explorer.
+
+### 1. An autonomous agent that acts, and proves it
+
+Describe the agent's job in plain English and pick its tools (or let it infer them from the goal). It reads its balance, sends CSPR by itself with no wallet popup, anchors a note on Casper, and reports back, every step a real transaction.
+
+![Casper State Futuristic UI](docs/screenshots/cyberpunk_ui.webp)
+*The updated futuristic glassmorphic UI of Casper State*
+
+### 2. Guardrails that stop it
+
+Ask the agent to overspend and the Capital Guardrail blocks it: signing locks for the rest of the run, the node turns red, and no funds move. Refusing to act is a first-class, provable outcome.
+
+### 3. From one sentence to a working agent
+
+Type a request in the command bar and Casper State assembles the flow for you, then runs it for real, transfer plus a Telegram proof.
+
+### 4. Conditional, multi-wallet reasoning
+
+A richer instruction: check several wallets and pay only those under a threshold. The agent reads each balance, decides per recipient, pays the eligible ones, skips the rest, and explains why, in a few seconds.
+
+### 5. Everything is audited: the Journal
+
+Every action, success, blocked, or failed, is recorded day by day with its on-chain proof link, in an aligned ledger with a GitHub-style activity calendar. Nothing is hand-wavy.
+
+## Quick start
+
+Requirements: Node.js 18 or newer.
+
+```bash
+git clone https://github.com/deevashb24/Casper-State.git
+cd Casper-State
+npm install
+npm run dev
+```
+
+Open the URL printed in the terminal (usually `http://localhost:5173`). Then in Settings → Integrations:
+
+1. **AI**: paste a key for your provider (Claude, GPT, Gemini, Grok, or any OpenAI-compatible endpoint).
+2. **Casper**: paste a free CSPR.cloud API key (used for on-chain reads, the spend-limit guardrail, and transaction confirmations).
+3. Add a testnet wallet and turn on **Execute real transactions**.
+4. Get free test CSPR from the faucet at `testnet.cspr.live`.
+
+⚠️ **Testnet only.** Wallet keys you add are stored unencrypted in your browser's `localStorage` and used to sign locally. Never paste a mainnet key holding real funds.
+
+## Build your first agent
+
+**Option A, by hand.** Drag a Wallet block onto the canvas, then a Transfer CSPR block from Value Routing, then a Signal Notification block from Data Terminals. Connect them left to right. Pick the signing wallet, set a recipient (a saved wallet by name, a public key, or a `name.cspr`) and an amount, then press Run once.
+
+**Option B, from one sentence.** Type a command in the bar at the top, for example:
+
+> Using wallet1, send 3 CSPR to wallet 2 and text me the transaction hash on Telegram.
+
+The AI builds the full flow on the canvas. Press Run once to execute it, or Go Live to run it on a schedule.
+
+Try the flagship in one sentence:
+
+> Using wallet1, every 60 seconds run a payroll: first ask the AI to authorize it only while the treasury balance stays above 4765 CSPR; if approved, send 4 CSPR to wallet 2 and 6 CSPR to wallet 3; then ask the AI to write a one-sentence audit summary; anchor the decision on Casper as a full attestation; and text me a payroll summary on Telegram with the AI decision, the summary, and all the transaction links.
+
+## Optional: run the x402 demo server
+
+The L402 blocks let an agent pay a paid HTTP API per request. A zero-dependency demo server is included. Run it in a separate terminal with a public key you control as the payee (use a different account than the paying wallet):
+
+```bash
+CSPR_CLOUD_KEY=<your-cspr-cloud-key> \
+PAY_TO=<a-public-key-you-control> \
+NETWORK=testnet \
+node x402-server/server.mjs
+```
+
+It serves a paid endpoint at `http://localhost:4021/premium`. Point a L402 Payment Channel block at that URL, and the agent will pay on Casper, the server will verify the payment on-chain, and the data will come back.
+
+## Use the MCP server
+
+Every Casper action is also a Model Context Protocol tool, so any MCP client (Claude Desktop, Claude Code, Cursor, a nanobot) can drive Casper directly. No clone, no build:
+
+```json
+{
+  "mcpServers": {
+    "casperstate": {
+      "command": "npx",
+      "args": ["-y", "casperflow-mcp"],
+      "env": {
+        "CASPER_NETWORK": "testnet",
+        "CSPR_CLOUD_KEY": "your-cspr-cloud-key",
+        "CASPER_SECRET_KEY_HEX": "your-testnet-secret-key-hex"
+      }
+    }
+  }
+}
+```
+
+Tools exposed: `casper_account_info`, `casper_get_balance`, `casper_resolve_name`, `casper_send_cspr`, `casper_delegate`, `casper_attest`. See `mcp-server/README.md` for details.
+
+## How it works
+
+Casper State runs entirely in the browser. The canvas is a directed graph of blocks; a runtime walks the graph in order, passing values between steps (balances, AI verdicts, transaction hashes) as variables you can drop into later blocks and messages.
+
+* Reads go through the CSPR.cloud REST API (balances, transfers, price).
+* Writes are built and signed locally with `casper-js-sdk` (real TransactionV1), then submitted to a testnet node; the runtime polls for the execution result and reports real Success or Failed.
+* AI calls your configured provider directly; the model only sees the run context and returns a decision or a short text.
+* Attestations use `casper-eip-712` to hash the AI decision into a digest that rides on-chain in the transfer, fully verifiable on the explorer.
+
+## Why Casper
+
+Low, predictable fees and fast deterministic finality make it practical to run scheduled, autonomous, high-frequency agent actions. The advanced account model, with weighted keys and action thresholds, fits permissioned autonomous agents and escrow or multisig setups. And on-chain attestation turns the AI's reasoning into a verifiable, auditable record, a strong fit for treasury, payroll, and compliance use cases.
+
+## Tech stack
+
+React 18, TypeScript, and Vite; React Flow (`@xyflow/react`) for the canvas; `casper-js-sdk v5` for real TransactionV1 signing and submission; CSPR.cloud REST for on-chain reads; `@casper-ecosystem/casper-eip-712` for attestations and x402; standard CEP-18 and CEP-78 contracts configured through their install arguments; a zero-dependency Node server for the x402 demo; an Odra escrow contract for x402 conditional payments. Custom Glassmorphic Cyberpunk Design System for styling.
+
+## Roadmap
+
+* No-code contracts live on testnet: deploy and mint CEP-18 tokens and CEP-78 NFT collections for real
+* x402 conditional escrow (Odra): pay, verify, then release or refund
+* Full x402 loop: pay (done), earn (done), and a pay-per-call MCP server
+* A live x402 marketplace demo between two agents
+* CSPR.trade swaps from beta to live, so agents can trade on their own
+* A hosted runner so agents keep running without the browser open
+* On-chain attestation registry (Odra) so proofs are easy to query
+* A one-click template library
+
+## Security
+
+This is hackathon and research software. Use testnet only. Wallet keys are stored unencrypted in browser `localStorage` and used for local signing. Do not use with real funds. AI keys and the CSPR.cloud key live in your browser and in environment variables for the servers; nothing sensitive is committed to this repository.
+
+## License
+
+Source-available under the PolyForm Noncommercial License 1.0.0: free to use, study, modify, and share for non-commercial purposes. See `LICENSE`. The standalone MCP server (`mcp-server/`) is published under MIT.
