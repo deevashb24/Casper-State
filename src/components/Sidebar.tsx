@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, LayoutTemplate } from "lucide-react";
 import { CATEGORY_LABELS, CATEGORY_COLORS, MODULES, ModuleCategory } from "../modules";
 import Icon from "../Icon";
 
-export function Sidebar({ paletteWidth, onDragStart }: any) {
+export function Sidebar({ paletteWidth, onDragStart, onItemClick }: any) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>(
     Object.keys(CATEGORY_LABELS).reduce((acc, k) => ({ ...acc, [k]: true }), {})
   );
@@ -45,6 +45,9 @@ export function Sidebar({ paletteWidth, onDragStart }: any) {
                       draggable
                       onDragStart={(e) => {
                         if (onDragStart) onDragStart(e, m.type);
+                      }}
+                      onClick={() => {
+                        if (onItemClick) onItemClick(m.type);
                       }}
                       className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-white/5 cursor-grab active:cursor-grabbing transition-colors text-slate-300 hover:text-white"
                       style={{ borderLeft: `2px solid ${color}` }}

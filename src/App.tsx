@@ -1607,6 +1607,30 @@ function Flow() {
     [screenToFlowPosition, setNodes, settings.collide, settings.defaultSigning],
   )
 
+  const onSidebarClick = useCallback(
+    (moduleType: string) => {
+      if (locked) return
+      const position = screenToFlowPosition({ 
+        x: window.innerWidth / 2 + (Math.random() * 40 - 20), 
+        y: window.innerHeight / 2 + (Math.random() * 40 - 20) 
+      })
+      const id = nextId()
+      setNodes((nds) => {
+        const node = makeNode(id, position.x, position.y, moduleType)
+        const def = moduleByType(moduleType)
+        if (def && SIGNABLE(def.category)) {
+          ;(node.data as ModuleNodeData).approval = settings.defaultSigning
+        }
+        const next = nds.map((n) => ({ ...n, selected: false })).concat({ ...node, selected: true })
+        return settings.collide ? pushApart(next, id) : next
+      })
+      setSelectedNodeId(id)
+      setRightTab('props')
+      setShowRightPanel(true)
+    },
+    [screenToFlowPosition, setNodes, settings.collide, settings.defaultSigning, locked],
+  )
+
   const menuAt = (event: React.MouseEvent, kind: MenuState['kind'], id?: string) => {
     event.preventDefault()
     const bounds = wrapper.current?.getBoundingClientRect()
@@ -3487,6 +3511,7 @@ function Flow() {
          <Sidebar 
             paletteWidth={paletteWidth} 
             onDragStart={(e: React.DragEvent, type: string) => e.dataTransfer.setData('application/casperflow', type)} 
+            onItemClick={onSidebarClick}
          />
       )}
 
