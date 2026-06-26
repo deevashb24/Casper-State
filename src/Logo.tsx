@@ -1,4 +1,4 @@
-import logoUrl from './casperstate-logo.webp'
+import logoUrl from './cornerstone-logo.webp'
 
 export function LogoAnimated({ size = 22 }: { size?: number }) {
   return (

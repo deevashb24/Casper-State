@@ -34,6 +34,10 @@ import {
 import { MODULES, CATEGORY_LABELS, CATEGORY_COLORS, moduleByType, defaultParams, substituteVars, statusOf, SIGNABLE, type ModuleCategory } from './modules'
 import { agentMemory, clearAgentMemory, debugLog, setLiveSchedule, captureConsole, addRecentTx } from './runtime'
 import ConsolePanel from './ConsolePanel'
+import { Sidebar } from './components/Sidebar'
+import { TopBar } from './components/TopBar'
+import { BottomBar } from './components/BottomBar'
+import { RightPanel } from './components/RightPanel'
 import HelpHints from './HelpHints'
 import NodeConfig from './NodeConfig'
 import { isWalletInstalled, connectWallet, disconnectWallet, reconnectIfConnected, onWalletEvents } from './wallet'
@@ -3476,99 +3480,27 @@ function Flow() {
   )
 
   return (
-    <div className="app" style={{ ['--ui-scale' as string]: settings.scale }}>
+    <div className="flex h-screen w-full relative overflow-hidden bg-[#070708] text-slate-100 font-sans" style={{ ['--ui-scale' as string]: settings.scale }}>
       <HelpHints enabled={settings.help !== false} />
-      <div
-        className="brand"
-        onClick={() => {
-          // Pan the canvas by the palette width so nodes stay put on screen when
-          // the sidebar collapses/expands (the canvas grows/shrinks on the left).
-          const v = getViewport()
-          setViewport({ ...v, x: v.x + (paletteOpen ? paletteWidth : -paletteWidth) })
-          setPaletteOpen((o) => !o)
-        }}
-        title={paletteOpen ? 'Hide the modules sidebar' : 'Show the modules sidebar'}
-      >
-        <Logo size={39} />
-        <div className="brand-textcol">
-          <span className="brand-name">Casper State</span>
-          <button
-            className={`brand-net${settings.casperNet === 'mainnet' ? ' mainnet' : ''}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (settings.casperNet === 'mainnet') setSettings({ ...settings, casperNet: 'testnet' })
-              else setConfirmMainnet(true)
-            }}
-            title="Switch network (Testnet / Mainnet)"
-          >
-            <span className="net-dot" /> {settings.casperNet === 'mainnet' ? 'Mainnet' : 'Testnet'}
-          </button>
-        </div>
-      </div>
-      <header
-        className={`topbar${paletteOpen ? '' : ' collapsed'}`}
-        style={{
-          paddingLeft: paletteWidth + 26,
-          ['--sidebar-w' as string]: paletteOpen ? `${paletteWidth}px` : '0px',
-        }}
-      >
-        <div className="topbar-left">
-          <WorkspaceBar
+      
+      {paletteOpen && (
+         <Sidebar 
+            paletteWidth={paletteWidth} 
+            onDragStart={(e: React.DragEvent, type: string) => e.dataTransfer.setData('application/casperflow', type)} 
+         />
+      )}
+
+      <div className="flex-1 relative flex flex-col">
+          <TopBar 
             workspaces={workspaces}
             activeId={activeId}
-            onSwitch={switchWorkspace}
-            onCreate={createWorkspace}
-            onRename={renameWorkspace}
-            onDuplicate={duplicateWorkspace}
-            onDelete={deleteWorkspace}
-            onExport={exportCurrent}
-            onImport={importFromFile}
-          />
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json,.json"
-          style={{ display: 'none' }}
-          onChange={onImportFile}
-        />
-        <div className="topbar-actions">
-          {live && (
-            <span className="badge-live">
-              <span className="live-dot" /> LIVE · {liveInterval}
-            </span>
-          )}
-          <button
-            className="btn-secondary btn-icon"
-            onClick={() => setShowJournal(true)}
-            title="A day-by-day diary of every on-chain action"
-          >
-            <Icon name="note" size={14} /> Journal
-          </button>
-          <span className="tb-div" />
-          <button
-            className="btn-secondary btn-icon"
-            onClick={() => {
-              setSettingsTab('connections')
-              setShowSettings(true)
-            }}
-          >
-            <Icon name="link" size={14} /> Integrations
-          </button>
-          <button
-            className="btn-secondary btn-icon"
-            onClick={() => {
+            onSwitchWorkspace={switchWorkspace}
+            onJournal={() => setShowJournal(true)}
+            onSettings={() => {
               setSettingsTab('interface')
               setShowSettings(true)
             }}
-          >
-            <Icon name="gear" size={14} /> Settings
-          </button>
-          <span className="tb-div" />
-          <button
-            className={`btn-run btn-icon${running && !live ? ' active-run btn-stop' : ''}`}
-            onClick={() => {
-              // While a run is in flight, the same button becomes Stop (triangle → square).
+            onRunOnce={() => {
               if (running && !live) {
                 stopRun()
                 return
@@ -3577,93 +3509,17 @@ function Flow() {
               setShowRightPanel(true)
               runCycle()
             }}
-            disabled={live}
-            title={running && !live ? 'Stop the current run' : 'Run the flow once'}
-          >
-            {running && !live && <BorderSparks color="#f87171" />}
-            <Icon name={running && !live ? 'square' : 'play'} size={13} />{' '}
-            {running && !live ? 'Stop' : 'Run once'}
-          </button>
-          <button
-            className={`btn-primary btn-icon${live ? ' btn-stop' : ''}`}
-            onClick={goLive}
-          >
-            {live && <BorderSparks color="#f87171" />}
-            <Icon name={live ? 'x' : 'zap'} size={13} /> {live ? 'Stop agent' : 'Go live'}
-          </button>
-        </div>
-      </header>
-      <div className="main">
-        {paletteOpen && (
-        <aside className="palette" style={{ width: paletteWidth }}>
-          <input
-            className="palette-search"
-            type="text"
-            placeholder="Search modules…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onGoLive={goLive}
+            isLive={live}
           />
-          {(Object.keys(CATEGORY_LABELS) as ModuleCategory[]).map((cat) => {
-            const q = search.trim().toLowerCase()
-            const items = MODULES.filter(
-              (m) => m.category === cat && !m.hidden && m.label.toLowerCase().includes(q),
-            )
-            if (items.length === 0) return null
-            const open = q.length > 0 || !collapsedCats.includes(cat)
-            return (
-              <div key={cat} className="palette-group">
-                <button
-                  className="palette-title palette-title-btn"
-                  onClick={() => toggleCat(cat)}
-                >
-                  <Icon
-                    name="chevron"
-                    size={15}
-                    className="palette-chevron"
-                    style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
-                  />
-                  <span className="palette-dot" style={{ background: CATEGORY_COLORS[cat].border }} />
-                  {CATEGORY_LABELS[cat]}
-                  <span className="palette-count">{items.length}</span>
-                </button>
-                {open &&
-                  items.map((m) => {
-                    const st = statusOf(m.type)
-                    return (
-                      <div
-                        key={m.type}
-                        className={`palette-item${st === 'soon' ? ' palette-soon' : ''}`}
-                        draggable
-                        onDragStart={(e) => e.dataTransfer.setData('application/casperflow', m.type)}
-                        style={{ ['--item-color' as string]: CATEGORY_COLORS[cat].border }}
-                        title={m.describe(defaultParams(m))}
-                      >
-                        <Icon name={m.icon} size={15} className="palette-icon" /> {m.label}
-                        {st === 'soon' && <span className="palette-soon-tag">Soon</span>}
-                        {st === 'beta' && <span className="palette-beta-tag">Beta</span>}
-                      </div>
-                    )
-                  })}
-              </div>
-            )
-          })}
-          <button
-            className="palette-title palette-title-btn palette-templates-cta"
-            onClick={() => setShowGallery(true)}
-            title="Browse agent templates"
-          >
-            <span className="palette-chev-spacer" />
-            <span className="palette-dot" style={{ background: '#94a3b8' }} />
-            Templates
-            <span className="palette-count">{AGENT_TEMPLATES.filter((t) => t.id !== 'blank').length}</span>
-          </button>
-          <div className="palette-hint">
-            Drag a module onto the canvas.<br />
-            Right-click = options · Double-click = configure.
-          </div>
-          <div className="palette-resizer" onMouseDown={startPaletteResize} />
-        </aside>
-        )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            style={{ display: 'none' }}
+            onChange={onImportFile}
+          />
+          <div className="flex-1 relative bg-canvas-grid flex overflow-hidden">
         <div
           className="canvas"
           ref={wrapper}
@@ -3943,9 +3799,13 @@ function Flow() {
             />
           )}
         </div>
+        </div>
+        <BottomBar />
+      </div>
+      <div className="relative z-30 flex h-full shrink-0">
         {!showRightPanel && (
           <button
-            className="rightpanel-reopen"
+            className="rightpanel-reopen pointer-events-auto bg-neutral-900 border-l border-b border-white/10"
             onClick={() => setShowRightPanel(true)}
             title="Show panel"
           >
@@ -3953,10 +3813,10 @@ function Flow() {
           </button>
         )}
         {showRightPanel && (
-        <aside className="logpanel" style={{ width: logWidth }}>
+        <aside className="pointer-events-auto w-[380px] h-full bg-neutral-950/90 backdrop-blur-xl border-l border-white/5 flex flex-col shadow-2xl" style={{ width: logWidth }}>
           <div className="logpanel-resizer" onMouseDown={startLogResize} />
-          <div className="rightpanel-tabs">
-            <div className="rp-tabgroup">
+          <div className="rightpanel-tabs h-20 flex items-center px-6 border-b border-white/5 shrink-0 bg-transparent">
+            <div className="rp-tabgroup flex gap-2 flex-1">
               {(() => {
                 const sn = nodes.find((n) => n.id === selectedNodeId)
                 const sdef = sn ? moduleByType((sn.data as ModuleNodeData).moduleType) : undefined

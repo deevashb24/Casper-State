@@ -6,7 +6,7 @@ Drag glossy glass blocks onto a neon canvas and connect them, or just describe w
 
 Built for the Casper Agentic Buildathon 2026.
 
-🎬 [Demo video](#) · 💻 [GitHub](https://github.com/deevashb24/Casper-State) · 📦 [MCP server (npm)](#)
+🌍 [Live App](https://casper-state.vercel.app) · 💻 [GitHub](https://github.com/deevashb24/Casper-State)
 
 ![Casper State visual canvas](docs/screenshots/dashboard.png)
 *Casper State visual canvas: a cyberpunk-themed treasury agent running on Casper testnet*
