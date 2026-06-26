@@ -22,16 +22,15 @@ import ContextMenu, { type MenuState } from './ContextMenu'
 import SettingsPanel, { DEFAULT_SETTINGS, type Settings } from './SettingsPanel'
 import WikiPanel from './WikiPanel'
 import JournalView from './JournalView'
-import WorkspaceBar from './WorkspaceBar'
 import TemplateGallery from './TemplateGallery'
-import { type AgentTemplate, buildFromSpecs, AGENT_TEMPLATES } from './templates'
+import { type AgentTemplate, buildFromSpecs } from './templates'
 import { generateWorkflow, editWorkflow, askText, runAgent } from './ai'
 import { effectiveTools } from './agentTools'
 import {
   loadStore, saveStore, newId, exportWorkspace, downloadJson, parseImport,
   type Workspace, type WorkspaceStore,
 } from './workspaces'
-import { MODULES, CATEGORY_LABELS, CATEGORY_COLORS, moduleByType, defaultParams, substituteVars, statusOf, SIGNABLE, type ModuleCategory } from './modules'
+import { MODULES, CATEGORY_COLORS, moduleByType, defaultParams, substituteVars, SIGNABLE } from './modules'
 import { agentMemory, clearAgentMemory, debugLog, setLiveSchedule, captureConsole, addRecentTx } from './runtime'
 import ConsolePanel from './ConsolePanel'
 import { Sidebar } from './components/Sidebar'
@@ -40,7 +39,7 @@ import { BottomBar } from './components/BottomBar'
 import { RightPanel } from './components/RightPanel'
 import HelpHints from './HelpHints'
 import NodeConfig from './NodeConfig'
-import { isWalletInstalled, connectWallet, disconnectWallet, reconnectIfConnected, onWalletEvents } from './wallet'
+import { reconnectIfConnected, onWalletEvents } from './wallet'
 import { sendCsprReal, delegateReal, callContractReal, deployTokenReal, deployNftReal, mintNftReal, awaitExecution, explorerTxUrl, hasAgentKey, getAgentPublicHex, getAgentKey, setAgentKeyFromPem, setActiveSigner } from './tx'
 import { payX402OnChain } from './x402'
 import { swapReal } from './swap'
@@ -51,9 +50,9 @@ import { linkify } from './linkify'
 import { sendTelegram, sendDiscord, isDiscordWebhook } from './notify'
 import { recordJournal } from './journal'
 import { fetchCsprPrice, getCsprPrice } from './price'
-import { getAccountBalance, getRecentTransfers, resolveCsprName, shortKey } from './casper'
+import { getAccountBalance, getRecentTransfers, resolveCsprName } from './casper'
 import Icon from './Icon'
-import Logo from './Logo'
+
 import PulseEdge from './PulseEdge'
 import BorderSparks from './Sparks'
 
@@ -293,7 +292,7 @@ const templateEdges = (): Edge[] => [
   { id: 'e4', source: 'n4', target: 'n5', type: 'pulse', animated: false, interactionWidth: 14 },
 ]
 
-const STORAGE_FLOW = 'casperflow-flow-v3'
+
 const STORAGE_SETTINGS = 'casperflow-settings-v1'
 const STORAGE_PALETTE = 'casperflow-palette-w'
 const STORAGE_LOG_W = 'casperflow-log-w'
@@ -559,16 +558,18 @@ function Flow() {
   const [settings, setSettings] = useState<Settings>(loadSettings())
   const [showSettings, setShowSettings] = useState(false)
   const [confirmMainnet, setConfirmMainnet] = useState(false)
-  const [paletteOpen, setPaletteOpen] = useState(true)
+  const paletteOpen = true
   const [showWiki, setShowWiki] = useState(false)
   const [showJournal, setShowJournal] = useState(false)
   const [showGallery, setShowGallery] = useState(false)
   const [showConsole, setShowConsole] = useState(false)
   const [consoleHeight, setConsoleHeight] = useState(300)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const [rightTab, setRightTab] = useState<'props' | 'log'>('log')
+  const [rightTab, setRightTab] = useState<'props' | 'log' | 'ai'>('log')
   const [showRightPanel, setShowRightPanel] = useState(true)
   const [settingsTab, setSettingsTab] = useState<'interface' | 'connections' | 'logs'>('interface')
+  const [aiChatMessages, setAiChatMessages] = useState<any[]>([])
+  const [aiTyping, setAiTyping] = useState(false)
 
   // Capture console.warn/error + uncaught errors into the Live console, once.
   // Also restore a persisted autonomous agent key, if any.
@@ -618,20 +619,6 @@ function Flow() {
     window.addEventListener('mouseup', up)
   }
   const [running, setRunning] = useState(false)
-  const [search, setSearch] = useState('')
-  const [collapsedCats, setCollapsedCats] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('casperflow-collapsed-cats') || '[]')
-    } catch {
-      return []
-    }
-  })
-  const toggleCat = (cat: string) =>
-    setCollapsedCats((c) => {
-      const next = c.includes(cat) ? c.filter((x) => x !== cat) : [...c, cat]
-      localStorage.setItem('casperflow-collapsed-cats', JSON.stringify(next))
-      return next
-    })
   const [interactionMode, setInteractionMode] = useState<'pan' | 'select'>(
     () => (localStorage.getItem('casperflow-mode') === 'pan' ? 'pan' : 'select'),
   )
@@ -639,11 +626,11 @@ function Flow() {
     setInteractionMode(m)
     localStorage.setItem('casperflow-mode', m)
   }
-  const [paletteWidth, setPaletteWidth] = useState<number>(() => {
+  const [paletteWidth] = useState<number>(() => {
     const w = Number(localStorage.getItem(STORAGE_PALETTE))
     return w >= 170 && w <= 440 ? w : 218
   })
-  const { screenToFlowPosition, getViewport, setViewport, fitView, zoomIn, zoomOut } = useReactFlow()
+  const { screenToFlowPosition, getViewport, fitView, zoomIn, zoomOut } = useReactFlow()
   const [locked, setLocked] = useState(false)
   const updateNodeInternals = useUpdateNodeInternals()
   const wrapper = useRef<HTMLDivElement>(null)
@@ -697,7 +684,6 @@ function Flow() {
   }
 
   const [live, setLive] = useState(false)
-  const [liveInterval, setLiveInterval] = useState('')
   const liveTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const cycleCount = useRef(0)
   const liveRef = useRef(false)
@@ -774,34 +760,7 @@ function Flow() {
     setWalletBalance(info?.balance ?? null)
   }
 
-  const handleWalletConnect = async () => {
-    if (walletKey) {
-      await disconnectWallet()
-      setWalletKey(null)
-      setWalletBalance(null)
-      return
-    }
-    if (!isWalletInstalled()) {
-      appendLog(
-        'Casper Wallet extension not found — install it from casperwallet.io, then retry.',
-        'warn',
-      )
-      window.open('https://www.casperwallet.io/download', '_blank')
-      return
-    }
-    const key = await connectWallet()
-    if (!key) {
-      appendLog('Wallet connection cancelled or failed (see Settings → Logs).', 'warn')
-      return
-    }
-    setWalletKey(key)
-    appendLog(`Wallet connected: ${shortKey(key)}`, 'ok')
-    refreshWalletBalance(key)
-    if (!settingsRef.current.watchedAccount) {
-      setSettings((s) => ({ ...s, watchedAccount: key }))
-      appendLog('Watched account set to your wallet (Settings → Casper).', 'info')
-    }
-  }
+
 
   useEffect(() => {
     reconnectIfConnected().then((key) => {
@@ -1107,27 +1066,7 @@ function Flow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const startPaletteResize = (e: React.MouseEvent) => {
-    e.preventDefault()
-    const startX = e.clientX
-    const startW = paletteWidth
-    document.body.style.cursor = 'col-resize'
-    const move = (ev: MouseEvent) => {
-      const w = Math.min(440, Math.max(170, startW + ev.clientX - startX))
-      setPaletteWidth(w)
-    }
-    const up = () => {
-      document.body.style.cursor = ''
-      window.removeEventListener('mousemove', move)
-      window.removeEventListener('mouseup', up)
-      setPaletteWidth((w) => {
-        localStorage.setItem(STORAGE_PALETTE, String(w))
-        return w
-      })
-    }
-    window.addEventListener('mousemove', move)
-    window.addEventListener('mouseup', up)
-  }
+
 
   useEffect(() => {
     setNodes((nds) =>
@@ -1342,7 +1281,6 @@ function Flow() {
     return ordered
       .map((n, i) => {
         const d = n.data as ModuleNodeData
-        const def = moduleByType(d.moduleType)
         const params = d.params ? JSON.stringify(d.params) : '{}'
         return `${i + 1}. ${d.moduleType} ${params}`
       })
@@ -1486,7 +1424,7 @@ function Flow() {
     appendLog(`Exported "${ws.name}" as JSON.`, 'ok')
   }
 
-  const importFromFile = () => fileInputRef.current?.click()
+
 
   const onImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -1701,11 +1639,7 @@ function Flow() {
   const deleteAllEdges = () => setEdges([])
   const selectAllEdges = () => setEdges((eds) => eds.map((e) => ({ ...e, selected: true })))
 
-  const resetTemplate = () => {
-    setNodes(templateNodes())
-    setEdges(templateEdges())
-    setLog([{ t: now(), kind: 'info', text: '"CSPR Sentinel" template reloaded.' }])
-  }
+
 
   const clearCanvas = () => {
     setNodes([])
@@ -3390,7 +3324,6 @@ function Flow() {
       return hh ? `${days} d ${hh} h` : `${days} d`
     }
     const bannerLabel = runOnce ? `once in ${human(intervalMs)}` : `every ${human(intervalMs)}`
-    setLiveInterval(bannerLabel)
     setLive(true)
     liveRef.current = true
     cycleCount.current = 0
@@ -3520,6 +3453,12 @@ function Flow() {
             workspaces={workspaces}
             activeId={activeId}
             onSwitchWorkspace={switchWorkspace}
+            onCreateWorkspace={createWorkspace}
+            onRenameWorkspace={renameWorkspace}
+            onDuplicateWorkspace={duplicateWorkspace}
+            onDeleteWorkspace={deleteWorkspace}
+            onExportWorkspace={exportCurrent}
+            onImportWorkspace={() => fileInputRef.current?.click()}
             onJournal={() => setShowJournal(true)}
             onSettings={() => {
               setSettingsTab('interface')
@@ -3867,6 +3806,12 @@ function Flow() {
               >
                 <Icon name="file-code" size={14} /> Log
               </button>
+              <button
+                className={`rp-tab${rightTab === 'ai' ? ' active' : ''}`}
+                onClick={() => setRightTab('ai')}
+              >
+                <Icon name="robot" size={14} /> AI Chat
+              </button>
             </div>
             <div className="rp-actions">
               {rightTab === 'log' && (
@@ -3947,7 +3892,7 @@ function Flow() {
                 </div>
               )
             })()
-          ) : (
+          ) : rightTab === 'log' ? (
             <div className="log-wrap">
               <div className="log" ref={logRef}>
                 {log.map((e, i) => (
@@ -3966,6 +3911,21 @@ function Flow() {
                   <Icon name="sparkles" size={14} /> Explain run
                 </button>
               )}
+            </div>
+          ) : (
+            <div className="flex-1 w-full relative">
+              <RightPanel 
+                messages={aiChatMessages} 
+                isTyping={aiTyping}
+                onSendMessage={(msg: string) => {
+                   setAiChatMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content: msg, timestamp: new Date() }]);
+                   setAiTyping(true);
+                   setTimeout(() => {
+                       setAiTyping(false);
+                       setAiChatMessages(prev => [...prev, { id: (Date.now()+1).toString(), role: 'assistant', content: "I'm a placeholder for the Casper AI backend. Your message was: " + msg, timestamp: new Date() }]);
+                   }, 1500);
+                }} 
+              />
             </div>
           )}
         </aside>

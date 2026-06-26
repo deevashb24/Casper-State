@@ -33,27 +33,7 @@ const usdOf = (amountCspr: number, price?: number): string | null => {
 // The full, honest gas breakdown from the chain receipt: what was held upfront,
 // what came back, and the net cost. Falls back to the single figure for older
 // entries that only stored the net cost.
-function gasLabel(e: JournalEntry) {
-  const { gasLimitMotes: limit, gasRefundMotes: refund, gasMotes: cost } = e
-  const netMotes = cost != null ? cost : limit != null && refund != null ? limit - refund : null
-  const netUsd = netMotes != null ? usdOf(netMotes / 1e9, e.usd) : null
-  if (limit != null && refund != null) {
-    return (
-      <span className="journal-gas" title="Casper 2.0 holds the gas limit upfront, then releases the unused part back to your wallet">
-        gas: held <strong>{cspr(limit)}</strong>, refunded <strong>{cspr(refund)}</strong>, net{' '}
-        <strong>{netMotes != null ? cspr(netMotes) : '0'}</strong> CSPR
-        {netUsd && <span className="journal-usd"> ({netUsd})</span>}
-      </span>
-    )
-  }
-  if (cost != null)
-    return (
-      <span className="journal-gas">
-        gas {cspr(cost)} CSPR{netUsd && <span className="journal-usd"> ({netUsd})</span>} (refundable)
-      </span>
-    )
-  return null
-}
+
 
 // Tidy the actor label for display (also fixes older entries): drop the now
 // removed "Autonomous" prefix and keep it short.

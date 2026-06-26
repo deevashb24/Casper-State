@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ChevronDown, ChevronRight, LayoutTemplate } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { CATEGORY_LABELS, CATEGORY_COLORS, MODULES, ModuleCategory } from "../modules";
 import Icon from "../Icon";
 

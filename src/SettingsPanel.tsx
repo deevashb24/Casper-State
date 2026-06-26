@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { sendTelegram, sendDiscord, isDiscordWebhook } from './notify'
 import { agentMemory, clearAgentMemory, getDebugLog, clearDebugLog, subscribeRuntime } from './runtime'
 import { getAccountBalance, type CasperNet } from './casper'
-import { setAgentKeyFromPem, generateAgentKey, getAgentPublicHex, hasAgentKey } from './tx'
 import {
   loadWalletProfiles,
   upsertWalletProfile,
@@ -326,49 +325,7 @@ export default function SettingsPanel({ settings, onChange, onClose, initialTab,
   const [tgStatus, setTgStatus] = useState('')
   const [dcStatus, setDcStatus] = useState('')
   const [csprStatus, setCsprStatus] = useState('')
-  const [agentStatus, setAgentStatus] = useState(
-    hasAgentKey() ? `Loaded — agent ${getAgentPublicHex()?.slice(0, 10)}…` : '',
-  )
 
-  const loadAgentKey = () => {
-    const r = setAgentKeyFromPem(settings.agentKeyPem)
-    if (!settings.agentKeyPem.trim()) {
-      setAgentStatus('Cleared — transactions will use the wallet (popup).')
-    } else if (r.ok && r.publicHex) {
-      setAgentStatus(`Loaded ✓ — agent key ${r.publicHex.slice(0, 12)}… signs autonomously.`)
-    } else {
-      setAgentStatus(r.error || 'Failed to load key.')
-    }
-  }
-
-  const genAgentKey = () => {
-    const { pem, publicHex } = generateAgentKey()
-    set({ agentKeyPem: pem })
-    setAgentStatus(
-      `New agent key created: ${publicHex.slice(0, 12)}… — fund it with test CSPR (faucet), then it runs autonomously.`,
-    )
-  }
-
-  const clearAgentKey = () => {
-    setAgentKeyFromPem('')
-    set({ agentKeyPem: '' })
-    setAgentStatus('Cleared — transactions will use the wallet (popup).')
-  }
-
-  const checkAgentBalance = async () => {
-    const pk = getAgentPublicHex()
-    if (!pk || !settings.csprCloudKey) {
-      setAgentStatus('Load a key and set a CSPR.cloud key first.')
-      return
-    }
-    setAgentStatus('Checking agent balance…')
-    const info = await getAccountBalance(settings.casperNet, settings.csprCloudKey, pk)
-    setAgentStatus(
-      info
-        ? `Agent ${pk.slice(0, 10)}… balance: ${info.balance.toLocaleString('en-US', { maximumFractionDigits: 2 })} CSPR`
-        : `Agent ${pk.slice(0, 10)}… — balance 0 or not funded yet (use the faucet).`,
-    )
-  }
   const [aiStatus, setAiStatus] = useState('')
   const [models, setModels] = useState<string[]>([])
   const [modelStatus, setModelStatus] = useState('')

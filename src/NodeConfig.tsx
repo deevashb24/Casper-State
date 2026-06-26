@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useReactFlow, useNodes } from '@xyflow/react'
 import { aiVarName, aiNodesOrdered } from './aiVars'
-import { moduleByType, defaultParams, SIGNABLE, type Params } from './modules'
+import { moduleByType, defaultParams, SIGNABLE} from './modules'
 import { fetchCsprPrice } from './price'
 import WalletNodeBack from './WalletNodeBack'
 import RecipientField from './RecipientField'
 import VariableInput from './VariableInput'
+import ParamsPanel from './ParamsPanel'
 import { AGENT_TOOLS, AGENT_ROLES, inferToolsFromGoal } from './agentTools'
 import Icon from './Icon'
 import type { ModuleNodeData } from './ModuleNode'
@@ -20,6 +21,7 @@ export default function NodeConfig({ id, data }: { id: string; data: ModuleNodeD
   const needsPrice = isPrice || (def?.params.some((p) => p.key === 'entry') ?? false)
   const [livePrice, setLivePrice] = useState<number | null>(null)
   const [editing, setEditing] = useState<Record<string, string>>({})
+  const [showRaw, setShowRaw] = useState(false)
 
   useEffect(() => {
     if (!needsPrice) return
@@ -385,6 +387,13 @@ export default function NodeConfig({ id, data }: { id: string; data: ModuleNodeD
     <div className="nodeconfig">
       {isWallet ? (
         <WalletNodeBack id={id} params={params} />
+      ) : showRaw ? (
+        <ParamsPanel 
+          nodeId={id} 
+          data={data} 
+          onChange={(_nid, p) => updateNodeData(id, { params: p })} 
+          onClose={() => setShowRaw(false)} 
+        />
       ) : (
         <>
           {data.moduleType === 'ai' && (
@@ -432,6 +441,14 @@ export default function NodeConfig({ id, data }: { id: string; data: ModuleNodeD
               {data.showAdvanced && adv.map(renderField)}
             </>
           )}
+          <button
+            type="button"
+            className="adv-toggle mt-4 opacity-50 hover:opacity-100"
+            onClick={() => setShowRaw(true)}
+          >
+            <Icon name="file-code" size={12} />
+            Show Raw Parameters
+          </button>
           {SIGNABLE(def.category) && (
             <div className="node-signing-note">
               <Icon name="wallet" size={14} className="nsn-icon" />

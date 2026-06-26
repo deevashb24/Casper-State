@@ -1,15 +1,24 @@
-import React, { useEffect, useRef } from "react";
-import { Bot, Sparkles, AlertCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Bot, Sparkles, AlertCircle, Send } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import AutoTextarea from "../AutoTextarea";
 
-export function RightPanel({ messages, isTyping }: any) {
+export function RightPanel({ messages, isTyping, onSendMessage }: any) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
     if (scrollRef.current) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isTyping]);
+
+  const handleSend = () => {
+    if (inputValue.trim() && onSendMessage) {
+      onSendMessage(inputValue.trim());
+      setInputValue("");
+    }
+  };
 
   return (
     <div className="w-[380px] h-full bg-neutral-950/90 backdrop-blur-xl border-l border-white/5 flex flex-col shadow-2xl pointer-events-auto">
@@ -26,6 +35,13 @@ export function RightPanel({ messages, isTyping }: any) {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+        {(!messages || messages.length === 0) && (
+          <div className="flex flex-col items-center justify-center h-full text-slate-500 text-sm text-center">
+             <Bot size={32} className="mb-4 opacity-50" />
+             <p>I can help you build and configure agents.</p>
+             <p>Ask me anything!</p>
+          </div>
+        )}
         {messages?.map((msg: any) => (
             <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                 <div className="flex items-center gap-2 mb-2">
@@ -71,13 +87,29 @@ export function RightPanel({ messages, isTyping }: any) {
                 </div>
                 <div className="bg-neutral-900 border border-white/10 rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2">
                     <Sparkles size={14} className="text-indigo-400 animate-pulse" />
-                    <span className="text-sm text-slate-400 italic">Thinking and generating layout...</span>
+                    <span className="text-sm text-slate-400 italic">Thinking...</span>
                 </div>
             </div>
         )}
       </div>
 
-      <div className="p-4 bg-neutral-900/50 border-t border-white/5 shrink-0">
+      <div className="p-4 bg-neutral-900/50 border-t border-white/5 shrink-0 flex flex-col gap-3">
+         <div className="relative flex items-end">
+            <AutoTextarea 
+               value={inputValue}
+               onChange={setInputValue}
+               placeholder="Message AI Assistant..."
+               className="w-full bg-neutral-950 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-sm text-slate-200 outline-none focus:border-indigo-500/50 resize-none transition-colors"
+               minHeight={46}
+            />
+            <button 
+               onClick={handleSend}
+               disabled={!inputValue.trim() || isTyping}
+               className="absolute right-2 bottom-2 p-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:hover:bg-indigo-500 transition-colors text-white"
+            >
+               <Send size={14} />
+            </button>
+         </div>
          <div className="flex items-center gap-3 bg-neutral-950 border border-white/5 rounded-xl p-3 shadow-inner">
              <AlertCircle size={14} className="text-amber-500 shrink-0" />
              <p className="text-[10px] leading-relaxed text-slate-500 font-medium">

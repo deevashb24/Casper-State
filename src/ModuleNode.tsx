@@ -53,7 +53,7 @@ export interface ModuleNodeData {
 }
 
 export default function ModuleNode({ id, data, selected }: NodeProps) {
-  const { updateNodeData } = useReactFlow()
+  const { } = useReactFlow()
   const allNodes = useNodes()
   const d = data as ModuleNodeData
   const def = moduleByType(d.moduleType)
