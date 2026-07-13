@@ -107,9 +107,59 @@ const readBody = (req) =>
     req.on('error', () => resolve(''))
   })
 
+// Security: Rate Limiting & Input Sanitization
+const rateLimitMap = new Map()
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000
+const MAX_ATTEMPTS = 5
+
+const checkRateLimit = (ip) => {
+  const now = Date.now()
+  let record = rateLimitMap.get(ip)
+  if (!record) {
+    record = { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS }
+    rateLimitMap.set(ip, record)
+    return true
+  }
+  if (now > record.resetAt) {
+    record.count = 1
+    record.resetAt = now + RATE_LIMIT_WINDOW_MS
+    return true
+  }
+  if (record.count >= MAX_ATTEMPTS) {
+    return false
+  }
+  record.count++
+  return true
+}
+
+const sanitizeInput = (str) => {
+  if (typeof str !== 'string') return str
+  return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;')
+}
+
+const sanitizeObject = (obj) => {
+  if (typeof obj === 'string') return sanitizeInput(obj)
+  if (Array.isArray(obj)) return obj.map(sanitizeObject)
+  if (typeof obj === 'object' && obj !== null) {
+    const clean = {}
+    for (const [k, v] of Object.entries(obj)) clean[sanitizeInput(k)] = sanitizeObject(v)
+    return clean
+  }
+  return obj
+}
+
 const server = http.createServer(async (req, res) => {
   cors(res)
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end() }
+  
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown'
+  if (req.url === '/publish' || req.url === '/premium') {
+    if (!checkRateLimit(ip)) {
+      console.warn(`[SECURITY AUDIT] Rate limit exceeded for IP: ${ip}`)
+      res.writeHead(429, { 'content-type': 'application/json' })
+      return res.end(JSON.stringify({ error: 'Too many requests, please try again later.' }))
+    }
+  }
 
   const url = new URL(req.url, `http://localhost:${PORT}`)
 
@@ -129,6 +179,11 @@ const server = http.createServer(async (req, res) => {
     const raw = await readBody(req)
     let parsed
     try { parsed = JSON.parse(raw) } catch { parsed = { content: raw } }
+    
+    // Security: Sanitize input
+    parsed = sanitizeObject(parsed)
+    console.log(`[SECURITY AUDIT] Sanitized input for /publish from IP: ${ip}`)
+
     listing = {
       resource: 'agent-listing',
       asset: 'CSPR',
@@ -149,14 +204,16 @@ const server = http.createServer(async (req, res) => {
       return res.end(JSON.stringify(paymentRequirements()))
     }
     const payload = b64decode(Array.isArray(header) ? header[0] : header)
-    const txHash = payload?.payload?.transaction || payload?.payload?.txHash || payload?.transaction || ''
+    const txHash = sanitizeInput(payload?.payload?.transaction || payload?.payload?.txHash || payload?.transaction || '')
     console.log(`→ payment presented, verifying tx ${String(txHash).slice(0, 16)}… on-chain`)
     const ok = await verifyOnChain(txHash)
     if (!ok) {
+      console.warn(`[SECURITY AUDIT] Invalid payment verification for IP: ${ip}`)
       console.log('✗ payment NOT verified on-chain')
       res.writeHead(402, { 'content-type': 'application/json' })
       return res.end(JSON.stringify({ ...paymentRequirements(), error: 'payment not verified on-chain (yet)' }))
     }
+    console.log(`[SECURITY AUDIT] Payment successfully verified for IP: ${ip}`)
     console.log('✓ payment verified — delivering premium content')
     res.setHeader('X-PAYMENT-RESPONSE', b64encode({ success: true, network: CHAIN, transaction: txHash }))
     res.writeHead(200, { 'content-type': 'application/json' })

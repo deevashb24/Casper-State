@@ -21,6 +21,12 @@ import {
   attest,
 } from './casper.js'
 
+// Security: Input Sanitization wrapper
+const sanitizeInput = (str: unknown): string => {
+  if (typeof str !== 'string') return String(str || '')
+  return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;')
+}
+
 const cfg = loadConfig()
 const server = new McpServer({ name: 'casperflow', version: '0.1.0' })
 
@@ -36,12 +42,14 @@ server.tool(
   {},
   async () => {
     try {
+      console.log(`[SECURITY AUDIT] Invoked tool casper_account_info`)
       if (!cfg.publicHex) return ok(`No signing key set. Network: ${cfg.net}. Reads only.`)
       const bal = await getBalance(cfg, cfg.publicHex)
       return ok(
         `Network: ${cfg.net}\nPublic key: ${cfg.publicHex}\nBalance: ${bal == null ? 'not funded' : bal + ' CSPR'}`,
       )
     } catch (e) {
+      console.warn(`[SECURITY AUDIT] Error in casper_account_info:`, e)
       return fail(e)
     }
   },
@@ -53,9 +61,12 @@ server.tool(
   { publicKey: z.string().describe('Casper public key (01… or 02…)') },
   async ({ publicKey }) => {
     try {
-      const bal = await getBalance(cfg, publicKey)
+      const safeKey = sanitizeInput(publicKey)
+      console.log(`[SECURITY AUDIT] Invoked tool casper_get_balance with key: ${safeKey.substring(0, 10)}...`)
+      const bal = await getBalance(cfg, safeKey)
       return ok(bal == null ? 'Account not found / not funded.' : `${bal} CSPR`)
     } catch (e) {
+      console.warn(`[SECURITY AUDIT] Error in casper_get_balance:`, e)
       return fail(e)
     }
   },
@@ -67,9 +78,12 @@ server.tool(
   { name: z.string().describe('A CSPR.name such as "alice.cspr"') },
   async ({ name }) => {
     try {
-      const hash = await resolveCsprName(cfg, name)
+      const safeName = sanitizeInput(name)
+      console.log(`[SECURITY AUDIT] Invoked tool casper_resolve_name for: ${safeName}`)
+      const hash = await resolveCsprName(cfg, safeName)
       return ok(`account-hash-${hash}`)
     } catch (e) {
+      console.warn(`[SECURITY AUDIT] Error in casper_resolve_name:`, e)
       return fail(e)
     }
   },
@@ -85,10 +99,13 @@ server.tool(
   },
   async ({ recipient, amount, transferId }) => {
     try {
+      const safeRecipient = sanitizeInput(recipient)
+      console.log(`[SECURITY AUDIT] Invoked tool casper_send_cspr for amount ${amount} to ${safeRecipient.substring(0, 10)}...`)
       if (amount < 2.5) return fail(new Error('Minimum native transfer is 2.5 CSPR.'))
-      const r = await sendCspr(cfg, recipient, amount, transferId)
+      const r = await sendCspr(cfg, safeRecipient, amount, transferId)
       return ok(`Sent ${amount} CSPR.\nTx: ${r.hash}\n${r.url}`)
     } catch (e) {
+      console.warn(`[SECURITY AUDIT] Error in casper_send_cspr:`, e)
       return fail(e)
     }
   },
@@ -103,9 +120,12 @@ server.tool(
   },
   async ({ validator, amount }) => {
     try {
-      const r = await delegate(cfg, validator, amount)
-      return ok(`Delegated ${amount} CSPR to ${validator.slice(0, 10)}….\nTx: ${r.hash}\n${r.url}`)
+      const safeValidator = sanitizeInput(validator)
+      console.log(`[SECURITY AUDIT] Invoked tool casper_delegate for amount ${amount} to ${safeValidator.substring(0, 10)}...`)
+      const r = await delegate(cfg, safeValidator, amount)
+      return ok(`Delegated ${amount} CSPR to ${safeValidator.slice(0, 10)}….\nTx: ${r.hash}\n${r.url}`)
     } catch (e) {
+      console.warn(`[SECURITY AUDIT] Error in casper_delegate:`, e)
       return fail(e)
     }
   },
@@ -120,11 +140,15 @@ server.tool(
   },
   async ({ topic, data }) => {
     try {
-      const r = await attest(cfg, topic, data)
+      const safeTopic = sanitizeInput(topic)
+      const safeData = sanitizeInput(data)
+      console.log(`[SECURITY AUDIT] Invoked tool casper_attest with topic: ${safeTopic}`)
+      const r = await attest(cfg, safeTopic, safeData)
       return ok(
         `Attestation anchored on Casper.\nClaim hash: ${r.claimHash}\nDigest: ${r.digest}\nTx: ${r.hash}\n${r.url}`,
       )
     } catch (e) {
+      console.warn(`[SECURITY AUDIT] Error in casper_attest:`, e)
       return fail(e)
     }
   },
